@@ -1116,7 +1116,7 @@ export default function App() {
                       </div>
                     </div>
 
-                    <h1 className="mt-5 font-display text-[clamp(2rem,4vw,3.2rem)] leading-[1.08] font-semibold tracking-tight text-[#3B2314] text-balance">
+                    <h1 className="mt-5 font-display text-[clamp(1.85rem,3.6vw,3rem)] leading-[1.15] font-bold tracking-tight text-[#3B2314] text-balance">
                       Warm Indian bakery classics, custom cakes &amp; Irani chai at your doorstep.
                     </h1>
 
