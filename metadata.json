@@ -1,0 +1,6 @@
+{
+  "name": "Boulangerie L'Étoile",
+  "description": "Artisanal sourdough loaves, laminated pastries, and seasonal tarts baked fresh each morning and delivered warm to your door.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

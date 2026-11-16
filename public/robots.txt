@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://gen-lang-client-0587764872.web.app/sitemap.xml

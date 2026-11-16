@@ -1,0 +1,322 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Core Helpers
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerified() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isVerifiedCustomer() {
+      return isSignedIn() && (
+        request.auth.token.email_verified == true
+        || request.auth.token.firebase.sign_in_provider == 'google.com'
+      );
+    }
+
+    function emailToId(email) {
+      return email.lower().replace('[^a-z0-9_-]', '_');
+    }
+
+    function isBootstrappedOwner() {
+      return isVerified() && (
+        request.auth.token.email.lower() == 'mohammadhisan552@gmail.com'
+        || request.auth.token.email.lower() == 'jangos247@gmail.com'
+        || request.auth.token.email.lower() == 'peelfatherdotin@gmail.com'
+      );
+    }
+
+    function isDynamicOwner() {
+      return isVerified()
+        && 'email' in request.auth.token
+        && exists(/databases/$(database)/documents/owners/$(emailToId(request.auth.token.email)))
+        && get(/databases/$(database)/documents/owners/$(emailToId(request.auth.token.email))).data.email == request.auth.token.email.lower();
+    }
+
+    function isAdminEmail() {
+      return isBootstrappedOwner() || isDynamicOwner();
+    }
+
+    function isValidStoreSettings(data) {
+      return data.keys().hasAll([
+          'bakeryName', 'tagline', 'address', 'phone', 'currency',
+          'deliveryFee', 'freeDeliveryThreshold', 'deliverySlots', 'deliveryZones'
+        ])
+        && data.keys().hasOnly([
+          'bakeryName', 'tagline', 'address', 'phone', 'secondaryPhone',
+          'currency', 'deliveryFee', 'freeDeliveryThreshold', 'taxPercent',
+          'deliverySlots', 'deliveryZones', 'festivalBanner', 'promoCodes', 'upiId', 'updatedAt'
+        ])
+        && data.bakeryName is string && data.bakeryName.size() >= 1 && data.bakeryName.size() <= 80
+        && data.tagline is string && data.tagline.size() >= 1 && data.tagline.size() <= 140
+        && data.address is string && data.address.size() >= 1 && data.address.size() <= 160
+        && data.phone is string && data.phone.size() >= 5 && data.phone.size() <= 24
+        && (!('secondaryPhone' in data) || (data.secondaryPhone is string && data.secondaryPhone.size() <= 24))
+        && data.currency in ['₹', '$', '£', 'AED']
+        && data.deliveryFee is number && data.deliveryFee >= 0 && data.deliveryFee <= 5000
+        && data.freeDeliveryThreshold is number && data.freeDeliveryThreshold >= 0 && data.freeDeliveryThreshold <= 50000
+        && (!('taxPercent' in data) || (data.taxPercent is number && data.taxPercent >= 0 && data.taxPercent <= 30))
+        && data.deliverySlots is list && data.deliverySlots.size() >= 1 && data.deliverySlots.size() <= 12
+        && data.deliveryZones is list && data.deliveryZones.size() >= 1 && data.deliveryZones.size() <= 30
+        && (!('festivalBanner' in data) || data.festivalBanner is map)
+        && (!('promoCodes' in data) || (data.promoCodes is list && data.promoCodes.size() <= 12))
+        && (!('upiId' in data) || (data.upiId is string && data.upiId.size() <= 80));
+    }
+
+    function isValidProduct(data) {
+      return data.keys().hasAll([
+          'id', 'name', 'category', 'price', 'weight', 'bakeTime',
+          'shortDescription', 'fullDescription', 'ingredients', 'allergens',
+          'dietary', 'reheatTip', 'image', 'inStock', 'options'
+        ])
+        && data.keys().hasOnly([
+          'id', 'name', 'category', 'price', 'originalPrice', 'offerLabel',
+          'weight', 'bakeTime', 'shortDescription', 'fullDescription',
+          'ingredients', 'allergens', 'dietary', 'vegType',
+          'isBestSeller', 'isTodaysSpecial', 'isRecommended', 'isCakeCustomizable',
+          'rating', 'reviewCount', 'reheatTip', 'image',
+          'featuredNote', 'inStock', 'options', 'updatedAt'
+        ])
+        && isValidId(data.id)
+        && data.name is string && data.name.size() >= 1 && data.name.size() <= 100
+        && data.category in [
+          'Cakes',
+          'Pastries',
+          'Breads',
+          'Puffs & Rolls',
+          'Cookies & Biscuits',
+          'Indian Sweets',
+          'Savouries',
+          'Beverages',
+          'Irani Chai & Cafe',
+          'Buns & Loaves',
+          'Puffs & Pastries',
+          'Cakes & Tarts',
+          'Gift & Morning Boxes'
+        ]
+        && data.price is number && data.price >= 0 && data.price <= 100000
+        && (!('originalPrice' in data) || (data.originalPrice is number && data.originalPrice >= 0 && data.originalPrice <= 100000))
+        && (!('offerLabel' in data) || (data.offerLabel is string && data.offerLabel.size() <= 40))
+        && data.weight is string && data.weight.size() >= 1 && data.weight.size() <= 40
+        && data.bakeTime is string && data.bakeTime.size() >= 1 && data.bakeTime.size() <= 20
+        && data.shortDescription is string && data.shortDescription.size() >= 1 && data.shortDescription.size() <= 260
+        && data.fullDescription is string && data.fullDescription.size() >= 1 && data.fullDescription.size() <= 800
+        && data.ingredients is list && data.ingredients.size() >= 1 && data.ingredients.size() <= 30
+        && data.ingredients[0] is string
+        && data.allergens is string && data.allergens.size() <= 200
+        && data.dietary is list && data.dietary.size() <= 5
+        && (!('vegType' in data) || data.vegType in ['veg', 'egg', 'non_veg'])
+        && (!('isBestSeller' in data) || data.isBestSeller is bool)
+        && (!('isTodaysSpecial' in data) || data.isTodaysSpecial is bool)
+        && (!('isRecommended' in data) || data.isRecommended is bool)
+        && (!('isCakeCustomizable' in data) || data.isCakeCustomizable is bool)
+        && (!('rating' in data) || (data.rating is number && data.rating >= 0 && data.rating <= 5))
+        && (!('reviewCount' in data) || (data.reviewCount is number && data.reviewCount >= 0 && data.reviewCount <= 100000))
+        && data.reheatTip is string && data.reheatTip.size() <= 300
+        && data.image is string && data.image.size() >= 1 && data.image.size() <= 350000
+        && (!('featuredNote' in data) || (data.featuredNote is string && data.featuredNote.size() <= 60))
+        && data.inStock is bool
+        && data.options is list && data.options.size() >= 1 && data.options.size() <= 10;
+    }
+
+    function isValidOrderPayload(data) {
+      return data.keys().hasAll([
+          'id', 'customerId', 'createdAtLabel', 'deliveryDay', 'deliveryWindow',
+          'neighborhood', 'customer', 'paymentMethod', 'items',
+          'subtotal', 'deliveryFee', 'tip', 'total', 'stage', 'courierName',
+          'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'id', 'customerId', 'customerEmail', 'createdAtLabel', 'deliveryDay', 'deliveryWindow',
+          'neighborhood', 'customer', 'paymentMethod', 'paymentStatus', 'upiReference', 'items',
+          'subtotal', 'discount', 'promoCode', 'tax', 'deliveryFee', 'tip', 'total',
+          'stage', 'courierName', 'note', 'createdAt', 'updatedAt'
+        ])
+        && isValidId(data.id)
+        && data.customerId is string && data.customerId.size() >= 1 && data.customerId.size() <= 128
+        && (!('customerEmail' in data) || (data.customerEmail is string && data.customerEmail.size() <= 160))
+        && data.createdAtLabel is string && data.createdAtLabel.size() >= 1 && data.createdAtLabel.size() <= 40
+        && data.deliveryDay in ['Today', 'Tomorrow']
+        && data.deliveryWindow is string && data.deliveryWindow.size() >= 1 && data.deliveryWindow.size() <= 40
+        && data.neighborhood is string && data.neighborhood.size() >= 1 && data.neighborhood.size() <= 100
+        && data.customer is map
+        && data.customer.keys().hasAll(['fullName', 'phone', 'streetAddress', 'postalCode'])
+        && data.customer.fullName is string && data.customer.fullName.size() >= 1 && data.customer.fullName.size() <= 80
+        && data.customer.phone is string && data.customer.phone.size() >= 5 && data.customer.phone.size() <= 24
+        && data.customer.streetAddress is string && data.customer.streetAddress.size() >= 3 && data.customer.streetAddress.size() <= 160
+        && data.customer.postalCode is string && data.customer.postalCode.size() >= 3 && data.customer.postalCode.size() <= 16
+        && data.paymentMethod in ['card_on_delivery', 'cash_on_delivery', 'upi_prepaid', 'online_card']
+        && (!('paymentStatus' in data) || data.paymentStatus in ['pending', 'verification_pending', 'verified', 'paid'])
+        && (!('upiReference' in data) || (data.upiReference is string && data.upiReference.size() <= 40))
+        && data.items is list && data.items.size() >= 1 && data.items.size() <= 40
+        && data.subtotal is number && data.subtotal >= 0 && data.subtotal <= 500000
+        && (!('discount' in data) || (data.discount is number && data.discount >= 0 && data.discount <= 500000))
+        && (!('promoCode' in data) || (data.promoCode is string && data.promoCode.size() <= 30))
+        && (!('tax' in data) || (data.tax is number && data.tax >= 0 && data.tax <= 100000))
+        && data.deliveryFee is number && data.deliveryFee >= 0 && data.deliveryFee <= 5000
+        && data.tip is number && data.tip >= 0 && data.tip <= 10000
+        && data.total is number && data.total >= 0 && data.total <= 550000
+        && data.stage in ['confirmed', 'baking', 'packed', 'out_for_delivery', 'delivered']
+        && data.courierName is string && data.courierName.size() >= 1 && data.courierName.size() <= 80
+        && (!('note' in data) || (data.note is string && data.note.size() <= 240));
+    }
+
+    function isValidUserProfile(data) {
+      return data.keys().hasAll(['uid', 'fullName', 'updatedAt'])
+        && data.keys().hasOnly([
+          'uid', 'email', 'fullName', 'phone', 'streetAddress',
+          'apartment', 'postalCode', 'instructions', 'wishlist', 'savedAddresses', 'updatedAt'
+        ])
+        && data.uid is string && data.uid.size() >= 1 && data.uid.size() <= 128
+        && (!('email' in data) || (data.email is string && data.email.size() <= 160))
+        && data.fullName is string && data.fullName.size() >= 1 && data.fullName.size() <= 80
+        && (!('phone' in data) || (data.phone is string && data.phone.size() <= 24))
+        && (!('streetAddress' in data) || (data.streetAddress is string && data.streetAddress.size() <= 160))
+        && (!('apartment' in data) || (data.apartment is string && data.apartment.size() <= 60))
+        && (!('postalCode' in data) || (data.postalCode is string && data.postalCode.size() <= 16))
+        && (!('instructions' in data) || (data.instructions is string && data.instructions.size() <= 200))
+        && (!('wishlist' in data) || (data.wishlist is list && data.wishlist.size() <= 50))
+        && (!('savedAddresses' in data) || (data.savedAddresses is list && data.savedAddresses.size() <= 10));
+    }
+
+    function isValidReview(data) {
+      return data.keys().hasAll(['id', 'productId', 'authorId', 'authorName', 'rating', 'comment', 'createdAt'])
+        && data.keys().hasOnly(['id', 'productId', 'authorId', 'authorName', 'rating', 'comment', 'createdAt'])
+        && isValidId(data.id)
+        && data.productId is string && data.productId.size() >= 1 && data.productId.size() <= 80
+        && data.authorId is string && data.authorId.size() >= 1 && data.authorId.size() <= 128
+        && data.authorName is string && data.authorName.size() >= 1 && data.authorName.size() <= 80
+        && data.rating is number && data.rating >= 1 && data.rating <= 5
+        && data.comment is string && data.comment.size() >= 1 && data.comment.size() <= 400;
+    }
+
+    // 1. Public Bakery Settings
+    match /settings/{settingId} {
+      allow get, list: if true;
+      allow create, update: if isAdminEmail()
+        && isValidId(settingId)
+        && isValidStoreSettings(incoming())
+        && incoming().updatedAt == request.time;
+      allow delete: if false;
+    }
+
+    // 2. Public Bakery Menu Products
+    match /products/{productId} {
+      allow get, list: if true;
+      allow create, update: if isAdminEmail()
+        && isValidId(productId)
+        && isValidProduct(incoming())
+        && incoming().id == productId
+        && incoming().updatedAt == request.time;
+      allow delete: if isAdminEmail() && isValidId(productId);
+    }
+
+    // 3. Customer Orders (PII Protected)
+    match /orders/{orderId} {
+      allow get: if isSignedIn() && isValidId(orderId)
+        && (isAdminEmail() || existing().customerId == request.auth.uid);
+      allow list: if isSignedIn()
+        && (isAdminEmail() || resource.data.customerId == request.auth.uid);
+      allow create: if isVerifiedCustomer()
+        && isValidId(orderId)
+        && isValidOrderPayload(incoming())
+        && incoming().id == orderId
+        && incoming().customerId == request.auth.uid
+        && incoming().stage == 'confirmed'
+        && (!('paymentStatus' in incoming()) || incoming().paymentStatus in ['pending', 'verification_pending'])
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isAdminEmail()
+        && isValidId(orderId)
+        && isValidOrderPayload(incoming())
+        && incoming().id == existing().id
+        && incoming().customerId == existing().customerId
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          (existing().stage != 'delivered' && incoming().diff(existing()).affectedKeys().hasOnly(['stage', 'courierName', 'paymentStatus', 'updatedAt']))
+          || incoming().diff(existing()).affectedKeys().hasOnly(['paymentStatus', 'updatedAt'])
+        );
+      allow delete: if false;
+    }
+
+    function isValidOwnerAccount(data) {
+      return data.keys().hasAll(['id', 'email', 'createdAt'])
+        && data.keys().hasOnly(['id', 'email', 'label', 'addedBy', 'createdAt'])
+        && isValidId(data.id)
+        && data.email is string && data.email.size() >= 5 && data.email.size() <= 160
+        && data.email == data.email.lower()
+        && data.id == emailToId(data.email)
+        && (!('label' in data) || (data.label is string && data.label.size() <= 60))
+        && (!('addedBy' in data) || (data.addedBy is string && data.addedBy.size() <= 160));
+    }
+
+    // 4. Private Customer Profile
+    match /users/{userId} {
+      allow get: if isSignedIn() && isValidId(userId)
+        && (isAdminEmail() || request.auth.uid == userId);
+      allow list: if isSignedIn()
+        && (isAdminEmail() || resource.data.uid == request.auth.uid);
+      allow create, update: if isVerifiedCustomer()
+        && isValidId(userId)
+        && request.auth.uid == userId
+        && isValidUserProfile(incoming())
+        && incoming().uid == request.auth.uid
+        && incoming().updatedAt == request.time;
+      allow delete: if false;
+    }
+
+    // 5. Authorized Bakery Owners
+    match /owners/{ownerId} {
+      allow get: if isVerified() && isValidId(ownerId)
+        && (isAdminEmail() || ('email' in request.auth.token && ownerId == emailToId(request.auth.token.email)));
+      allow list: if isAdminEmail();
+      allow create: if isAdminEmail()
+        && isValidId(ownerId)
+        && isValidOwnerAccount(incoming())
+        && incoming().id == ownerId
+        && incoming().createdAt == request.time;
+      allow update: if false;
+      allow delete: if isAdminEmail()
+        && isValidId(ownerId)
+        && ownerId != 'mohammadhisan552_gmail_com'
+        && ownerId != 'jangos247_gmail_com'
+        && ownerId != 'peelfatherdotin_gmail_com';
+    }
+
+    // 6. Customer Product Reviews
+    match /reviews/{reviewId} {
+      allow get, list: if true;
+      allow create: if isVerifiedCustomer()
+        && isValidId(reviewId)
+        && isValidReview(incoming())
+        && incoming().id == reviewId
+        && incoming().authorId == request.auth.uid
+        && incoming().createdAt == request.time;
+      allow update: if false;
+      allow delete: if isValidId(reviewId)
+        && (isAdminEmail() || (isVerifiedCustomer() && existing().authorId == request.auth.uid));
+    }
+  }
+}

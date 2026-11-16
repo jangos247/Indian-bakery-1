@@ -1,0 +1,236 @@
+{
+  "entities": {
+    "StoreSettings": {
+      "title": "StoreSettings",
+      "description": "Public storefront configuration, delivery slots, pin-code zones, taxes, and active festival offers for Indian Bakery & Cafe.",
+      "type": "object",
+      "properties": {
+        "bakeryName": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "tagline": { "type": "string", "minLength": 1, "maxLength": 140 },
+        "address": { "type": "string", "minLength": 1, "maxLength": 160 },
+        "phone": { "type": "string", "minLength": 5, "maxLength": 24 },
+        "secondaryPhone": { "type": "string", "maxLength": 24 },
+        "currency": { "type": "string", "enum": ["₹", "$", "£", "AED"] },
+        "deliveryFee": { "type": "number" },
+        "freeDeliveryThreshold": { "type": "number" },
+        "taxPercent": { "type": "number" },
+        "deliverySlots": { "type": "array" },
+        "deliveryZones": { "type": "array" },
+        "festivalBanner": { "type": "object" },
+        "promoCodes": { "type": "array" },
+        "upiId": { "type": "string", "maxLength": 80 },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "bakeryName",
+        "tagline",
+        "address",
+        "phone",
+        "currency",
+        "deliveryFee",
+        "freeDeliveryThreshold",
+        "deliverySlots",
+        "deliveryZones"
+      ]
+    },
+    "Product": {
+      "title": "Product",
+      "description": "Bakery menu item managed by the owner and displayed to all customers.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 80, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "name": { "type": "string", "minLength": 1, "maxLength": 100 },
+        "category": {
+          "type": "string",
+          "enum": [
+            "Cakes",
+            "Pastries",
+            "Breads",
+            "Puffs & Rolls",
+            "Cookies & Biscuits",
+            "Indian Sweets",
+            "Savouries",
+            "Beverages",
+            "Irani Chai & Cafe",
+            "Buns & Loaves",
+            "Puffs & Pastries",
+            "Cakes & Tarts",
+            "Gift & Morning Boxes"
+          ]
+        },
+        "price": { "type": "number" },
+        "originalPrice": { "type": "number" },
+        "offerLabel": { "type": "string", "maxLength": 40 },
+        "weight": { "type": "string", "minLength": 1, "maxLength": 40 },
+        "bakeTime": { "type": "string", "minLength": 1, "maxLength": 20 },
+        "shortDescription": { "type": "string", "minLength": 1, "maxLength": 260 },
+        "fullDescription": { "type": "string", "minLength": 1, "maxLength": 800 },
+        "ingredients": { "type": "array" },
+        "allergens": { "type": "string", "maxLength": 200 },
+        "dietary": { "type": "array" },
+        "vegType": { "type": "string", "enum": ["veg", "egg", "non_veg"] },
+        "isBestSeller": { "type": "boolean" },
+        "isTodaysSpecial": { "type": "boolean" },
+        "isRecommended": { "type": "boolean" },
+        "isCakeCustomizable": { "type": "boolean" },
+        "rating": { "type": "number" },
+        "reviewCount": { "type": "number" },
+        "reheatTip": { "type": "string", "maxLength": 300 },
+        "image": { "type": "string", "minLength": 1, "maxLength": 350000 },
+        "featuredNote": { "type": "string", "maxLength": 60 },
+        "inStock": { "type": "boolean" },
+        "options": { "type": "array" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "id",
+        "name",
+        "category",
+        "price",
+        "weight",
+        "bakeTime",
+        "shortDescription",
+        "fullDescription",
+        "ingredients",
+        "allergens",
+        "dietary",
+        "reheatTip",
+        "image",
+        "inStock",
+        "options"
+      ]
+    },
+    "Order": {
+      "title": "Order",
+      "description": "Customer bakery home delivery order with live tracking stage.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 40, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "customerId": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "customerEmail": { "type": "string", "maxLength": 160 },
+        "createdAtLabel": { "type": "string", "minLength": 1, "maxLength": 40 },
+        "deliveryDay": { "type": "string", "enum": ["Today", "Tomorrow"] },
+        "deliveryWindow": { "type": "string", "minLength": 1, "maxLength": 40 },
+        "neighborhood": { "type": "string", "minLength": 1, "maxLength": 100 },
+        "customer": { "type": "object" },
+        "paymentMethod": {
+          "type": "string",
+          "enum": ["card_on_delivery", "cash_on_delivery", "upi_prepaid", "online_card"]
+        },
+        "paymentStatus": {
+          "type": "string",
+          "enum": ["pending", "verification_pending", "verified", "paid"]
+        },
+        "upiReference": { "type": "string", "maxLength": 40 },
+        "items": { "type": "array" },
+        "subtotal": { "type": "number" },
+        "discount": { "type": "number" },
+        "promoCode": { "type": "string", "maxLength": 30 },
+        "tax": { "type": "number" },
+        "deliveryFee": { "type": "number" },
+        "tip": { "type": "number" },
+        "total": { "type": "number" },
+        "stage": {
+          "type": "string",
+          "enum": ["confirmed", "baking", "packed", "out_for_delivery", "delivered"]
+        },
+        "courierName": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "note": { "type": "string", "maxLength": 240 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "id",
+        "customerId",
+        "createdAtLabel",
+        "deliveryDay",
+        "deliveryWindow",
+        "neighborhood",
+        "customer",
+        "paymentMethod",
+        "items",
+        "subtotal",
+        "deliveryFee",
+        "tip",
+        "total",
+        "stage",
+        "courierName",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "CustomerProfile": {
+      "title": "CustomerProfile",
+      "description": "Private saved delivery profile, wishlist, and addresses for a signed-in customer.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "email": { "type": "string", "maxLength": 160 },
+        "fullName": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "phone": { "type": "string", "maxLength": 24 },
+        "streetAddress": { "type": "string", "maxLength": 160 },
+        "apartment": { "type": "string", "maxLength": 60 },
+        "postalCode": { "type": "string", "maxLength": 16 },
+        "instructions": { "type": "string", "maxLength": 200 },
+        "wishlist": { "type": "array" },
+        "savedAddresses": { "type": "array" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "fullName", "updatedAt"]
+    },
+    "OwnerAccount": {
+      "title": "OwnerAccount",
+      "description": "Authorized bakery owner/manager email granted Owner Studio access.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "email": { "type": "string", "minLength": 5, "maxLength": 160 },
+        "label": { "type": "string", "maxLength": 60 },
+        "addedBy": { "type": "string", "maxLength": 160 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "email", "createdAt"]
+    },
+    "ProductReview": {
+      "title": "ProductReview",
+      "description": "Verified customer rating and review for a bakery product.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 80, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "productId": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "authorId": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "authorName": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "rating": { "type": "number" },
+        "comment": { "type": "string", "minLength": 1, "maxLength": 400 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "productId", "authorId", "authorName", "rating", "comment", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/settings/{settingId}": {
+      "schema": { "$ref": "#/entities/StoreSettings" },
+      "description": "Public bakery settings document (store)."
+    },
+    "/products/{productId}": {
+      "schema": { "$ref": "#/entities/Product" },
+      "description": "Bakery menu catalog items."
+    },
+    "/orders/{orderId}": {
+      "schema": { "$ref": "#/entities/Order" },
+      "description": "Customer home delivery orders."
+    },
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/CustomerProfile" },
+      "description": "Private customer delivery address, saved addresses, and wishlist."
+    },
+    "/owners/{ownerId}": {
+      "schema": { "$ref": "#/entities/OwnerAccount" },
+      "description": "Authorized bakery owner accounts allowed to manage menu, offers, settings, and orders."
+    },
+    "/reviews/{reviewId}": {
+      "schema": { "$ref": "#/entities/ProductReview" },
+      "description": "Public customer product reviews and star ratings."
+    }
+  }
+}
